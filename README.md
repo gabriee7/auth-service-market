@@ -1,121 +1,132 @@
+# auth-service-market-api
 
- # market-user-service
+Microserviço de autenticação em Node.js + Express. Responsável por validar credenciais e emitir/verificar JWTs.
 
- Microserviço Node.js (Express) para gerenciamento de usuários — Controller → Service → Repository, MySQL (`mysql2/promise`), validação com `Joi`, hashing de senha com `bcryptjs` e UUIDs com `uuid`.
+**Pré-requisitos**
 
- **Principais responsabilidades:** CRUD de usuários, validação de payloads, tratamento global de erros, documentação OpenAPI/Swagger e inicialização automática do schema (`init.sql`) no startup.
+- Node.js 20+ 
 
- **Rodar localmente**
+## Variáveis de ambiente
 
- 1. Instale dependências:
+Crie um arquivo `.env` com pelo menos as variáveis abaixo:
 
-    ```bash
-    npm install
-    ```
+- `PORT` (opcional, padrão 3000)
+- `DB_HOST` — host do MySQL
+- `DB_USER` — usuário do MySQL
+- `DB_PASSWORD` — senha do MySQL
+- `DB_NAME` — nome do banco
+- `DB_PORT` (opcional, padrão 3306)
+- `JWT_SECRET` — segredo para assinar tokens (OBRIGATÓRIO para `login`/`verify` em runtime)
+- `JWT_EXPIRY` (opcional, formato compatível com `jsonwebtoken`, ex: `1h`, `3600s`; padrão aplicado no serviço)
 
- 2. Crie um arquivo `.env` (ou copie `.env.example`) com variáveis mínimas:
+## Instalação
 
-    - `PORT` (opcional, padrão 3000)
-    - `DB_HOST`
-    - `DB_USER`
-    - `DB_PASSWORD`
-    - `DB_NAME`
-    - `DB_PORT` (opcional)
+```bash
+npm install
+```
 
- 3. Inicie a aplicação:
+## Rodar localmente
 
-    ```bash
-    npm start
-    ```
+Desenvolvimento:
 
- A aplicação roda por padrão em `http://localhost:3000` e cria/atualiza o schema definido em `init.sql` ao iniciar.
+```bash
+npm run dev
+```
 
- **Testes**
+Executar:
 
- - Execute a suíte de testes (unit + integration):
+```bash
+npm start
+```
 
-    ```bash
-    npm test
-    ```
+O serviço por padrão expõe a documentação OpenAPI/Swagger em `http://localhost:3000/api/docs`.
 
- **Documentação (Swagger/OpenAPI)**
+## Testes
 
- - A documentação interativa está disponível em `http://localhost:3000/api/docs` quando o servidor estiver em execução.
+Executar a suíte (unit + integration):
 
- Endpoints
- - Observação: as rotas de usuário estão montadas em duas bases para compatibilidade de testes e uso: `/user` e `/api/users` — ambas mapeiam para os mesmos handlers.
+```bash
+npm test
+```
 
- Base paths:
- - `/user`
- - `/api/users`
+Observações sobre testes:
+- Os testes de repositório isolam o banco mockando o pool exportado em `src/config/database.js`.
 
- Recursos e exemplos
- - Criar usuário
-   - POST /user
-   - Payload (JSON):
+## API
 
-     ```json
-     {
-       "name": "Alice",
-       "email": "alice@example.com",
-       "password": "secret"
-     }
-     ```
+Base path: `/api/auth`
 
-   - Response: 201 Created
-     ```json
-     {
-       "id": "uuid-v4",
-       "name": "Alice",
-       "email": "alice@example.com",
-       "createdAt": "2026-01-01T00:00:00.000Z",
-       "updatedAt": "2026-01-01T00:00:00.000Z"
-     }
-     ```
+1) POST `/api/auth/login`
 
- - Listar usuários
-   - GET /user
-   - Response: 200 OK — array de `UserResponse`.
+- Descrição: valida credenciais e retorna um JWT com informações do usuário.
+- Payload (JSON):
 
- - Buscar por id
-   - GET /user/:id
-   - Response: 200 OK ou 404 Not Found
+```json
+{
+  "email": "alice@example.com",
+  "password": "secret"
+}
+```
 
- - Atualizar usuário
-   - PUT /user/:id
-   - Payload: mesmo formato do POST (todos os campos opcionais)
-   - Response: 200 OK com o usuário atualizado
+- Response 200 (exemplo):
 
- - Deletar usuário
-   - DELETE /user/:id
-   - Response: 204 No Content
+```json
+{
+  "token": "eyJ...",
+  "expiresAt": "2026-02-01T16:00:00.000Z",
+  "user": {
+    "id": "uuid-v4",
+    "email": "alice@example.com"
+  }
+}
+```
 
- Esquemas (resumo)
- - UserRequest: `{ name, email, password }`
- - UserResponse: `{ id, name, email, createdAt, updatedAt }`
+Notas:
+- O campo `user` contém apenas informações não sensíveis (não inclui `password`).
+- `expiresAt` é a data/hora de expiração do token em ISO-8601.
 
- Observações de implementação
- - Senhas são armazenadas apenas em formato hashed (bcrypt).
- - Validações de payload usam `Joi` e retornam `400 Bad Request` para entradas inválidas.
- - Erros de domínio usam exceções customizadas (`ConflictException`, `NotFoundException`, `BadRequestException`) e o middleware global formata respostas JSON com `{ error: 'mensagem' }`.
- - O startup executa `init.sql` para garantir que o schema/BD exista; configure corretamente as credenciais no `.env` antes de rodar.
+2) POST `/api/auth/verify`
 
- Deploy / Docker
- - O projeto inclui um `Dockerfile`. Para construir e rodar:
+- Descrição: valida um JWT enviado no corpo `{ token: "..." }` ou no header `Authorization: Bearer <token>`.
+- Payload (JSON):
 
-    ```bash
-    docker build -t market-user-service .
-    docker run -p 3000:3000 --env-file .env market-user-service
-    ```
+```json
+{ "token": "eyJ..." }
+```
 
- CI/CD
- - Há um workflow de exemplo em `.github/workflows/main.yml` que utiliza um reusable workflow para build/push.
- - Configure as secrets `DOCKERHUB_USERNAME` e `DOCKERHUB_PASSWORD` para publicar imagens.
+- Response 200 (exemplo):
 
- Arquivos importantes
- - `index.js` — bootstrap e mounts (rotas + Swagger)
- - `src/routes/*` — definição de rotas
- - `src/controllers/*` — handlers HTTP
- - `src/services/*` — regras de negócio
- - `src/repositories/*` — acesso ao MySQL
- - `init.sql` — DDL do schema usado no startup
+```json
+{
+  "valid": true,
+  "expiresAt": "2026-02-01T16:00:00.000Z",
+  "payload": { "sub": "uuid-v4", "email": "alice@example.com", "iat": 1675257600 }
+}
+```
+
+Response 401 é retornado para tokens inválidos/expirados.
+
+## Observações de implementação
+
+- Senhas: comparadas com `bcryptjs.compare` e nunca retornadas nas respostas.
+- Erros: o middleware global padroniza respostas JSON com formato `{ error: 'mensagem' }`.
+- Repositório: `src/repositories/authRepository.js` consulta a tabela `users` por email. Nos testes, o pool é mockado para evitar dependência de um banco real.
+
+## Docker
+
+Construir e rodar a imagem:
+
+```bash
+docker build -t auth-service-market-api .
+docker run -p 3000:3000 --env-file .env auth-service-market-api
+```
+
+## Estrutura importante
+
+- `index.js` — bootstrap do app e mount das rotas + Swagger
+- `src/routes/authRoutes.js` — rotas de autenticação
+- `src/controllers/authController.js` — handlers HTTP
+- `src/services/authService.js` — regras de autenticação (login/verify)
+- `src/repositories/authRepository.js` — acesso ao MySQL
+- `src/config/database.js` — pool MySQL (mockável nos testes)
+- `tests/` — testes unitários e de integração (jest + supertest)
