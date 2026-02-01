@@ -1,6 +1,6 @@
 import { HttpError } from '#errors/index.js';
 
-export default function errorHandler(err, req, res) {
+export default function errorHandler(err, req, res, next) {
   if (err && err.code === 'ER_DUP_ENTRY') {
     return res.status(409).json({ error: 'Email already in use' });
   }
