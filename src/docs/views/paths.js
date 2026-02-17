@@ -1,5 +1,5 @@
 const authPaths = {
-  '/api/auth/login': {
+  '/auth/api/auth/login': {
     post: {
       tags: ['Auth'],
       summary: 'login and receive JWT token',
@@ -16,7 +16,7 @@ const authPaths = {
       }
     }
   },
-  '/api/auth/verify': {
+  '/auth/api/auth/verify': {
     post: {
       tags: ['Auth'],
       summary: 'verify a JWT token',

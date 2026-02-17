@@ -14,7 +14,7 @@ app.use(errorHandler);
 describe('Auth Routes', () => {
   beforeEach(() => jest.resetAllMocks());
 
-  it('deve retornar 400 para payload inválido em POST /api/auth/login', async () => {
+  it('deve retornar 400 para payload inválido em POST /auth/api/auth/login', async () => {
     // Arrange
     const payload = {};
     // Act
@@ -31,7 +31,7 @@ describe('Auth Routes', () => {
     authService.login = jest.fn().mockResolvedValue(out);
 
     // Act
-    const res = await request(app).post('/api/auth/login').send(dto);
+    const res = await request(app).post('/auth/api/auth/login').send(dto);
 
     // Assert
     expect(authService.login).toHaveBeenCalledWith(expect.objectContaining({ email: dto.email, password: dto.password }));
@@ -46,7 +46,7 @@ describe('Auth Routes', () => {
     authService.login = jest.fn().mockRejectedValue(new UnauthorizedException('Invalid credentials'));
 
     // Act
-    const res = await request(app).post('/api/auth/login').send(dto);
+    const res = await request(app).post('/auth/api/auth/login').send(dto);
 
     // Assert
     expect(authService.login).toHaveBeenCalledWith(expect.objectContaining({ email: dto.email, password: dto.password }));
