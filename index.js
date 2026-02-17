@@ -1,7 +1,10 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import routes from './src/routes/index.js';
+import defaultRoutes from './src/routes/defaultRoutes.js';
+import authRoutes from './src/routes/authRoutes.js';
+import swaggerUi from 'swagger-ui-express';
+import openapiSpec from './src/docs/openapi.js';
 import errorHandler from './src/middlewares/errorHandler.js';
 
 const app = express();
@@ -10,8 +13,9 @@ app.use(express.json());
 const PORT = process.env.PORT || 3000;
 
 // Rotas agrupadas
-const basePath = process.env.BASE_PATH || '/';
-app.use(basePath, routes);
+app.use('/', defaultRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openapiSpec));
 
 // Middleware
 app.use(errorHandler);
