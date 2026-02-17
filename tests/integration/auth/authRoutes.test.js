@@ -8,7 +8,7 @@ import { UnauthorizedException } from '#errors/index.js';
 
 const app = express();
 app.use(express.json());
-app.use('/api/auth', authRoutes);
+app.use('/auth/api/auth', authRoutes);
 app.use(errorHandler);
 
 describe('Auth Routes', () => {
@@ -18,7 +18,7 @@ describe('Auth Routes', () => {
     // Arrange
     const payload = {};
     // Act
-    const res = await request(app).post('/api/auth/login').send(payload);
+    const res = await request(app).post('/auth/api/auth/login').send(payload);
     // Assert
     expect(res.statusCode).toBe(400);
     expect(res.body).toHaveProperty('error');
